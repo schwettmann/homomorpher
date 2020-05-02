@@ -30,7 +30,7 @@ def generate_img(z, class_idx):    #for some z and some class (in Places365), ge
 	return G_z  
 
 def transform_img(z, class_idx, svm_lbl):  #from z + orig category, name of SVM to use; return original image and transformed image
-	#svm_lbl can be SVM_lakereeflection or SVM_summerlakes
+	#svm_lbl can be 'SVM_lakereeflection' or 'SVM_summerlakes'
 	y = class_idx * torch.ones(batch_size, device=device).long()
 	with torch.no_grad():
 		G_z = utils.elastic_gan(g, z, y)  # Allows for batches larger than what fits in memory.  
