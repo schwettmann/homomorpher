@@ -34,7 +34,7 @@ def transform_img(z, class_idx, svm_lbl):  #from z + orig category, name of SVM 
 	y = class_idx * torch.ones(batch_size, device=device).long()
 	with torch.no_grad():
     	G_z = utils.elastic_gan(g, z, y)  # Allows for batches larger than what fits in memory.  
-    current_z = torch.nn.Parameter(z, requires_grad=True)   #makes space to hold gradients - z is the kind of thing we can optimize   
+  current_z = torch.nn.Parameter(z, requires_grad=True)   #makes space to hold gradients - z is the kind of thing we can optimize   
 	parameters = [current_z]   #yes we are still shifting z, this time based on the SVM value. 
 	num_steps =500   #sure
 	optimizer = torch.optim.Adam([current_z])    
@@ -61,7 +61,7 @@ def transform_img(z, class_idx, svm_lbl):  #from z + orig category, name of SVM 
             	else:
                 	raise e
     
-    !git clone https://github.com/schwettmann/homomorpher.git
+  !git clone https://github.com/schwettmann/homomorpher.git
 	path = "/content/pretorched-x/homomorpher/SVMs/{svm_lbl}"
 	model = torch.load(path)
 	model.eval()
