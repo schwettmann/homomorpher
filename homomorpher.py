@@ -2,10 +2,12 @@
 
 import functools
 import torch
-from pretorched import gans
+# from pretorched import gans
 from pretorched.gans import BigGAN, biggan, utils
-from pretorched import visualizers as vutils
+# from pretorched import visualizers as vutils
+import torchvision.transforms as transforms
 
+print(torch.cuda.is_available())
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 res = 256
@@ -40,7 +42,8 @@ def generate_img(z, class_idx):
     with torch.no_grad():
         G_z = utils.elastic_gan(g, z,
                                 y)  # Allows for batches larger than what fits in memory.
-    vutils.visualize_samples(G_z)  # Visualizes the image
+    # vutils.visualize_samples(G_z)  # Visualizes the image
+
     return G_z
 
 
@@ -58,9 +61,11 @@ def transform_img(z, class_idx, svm_lbl):
         G_z = utils.elastic_gan(g, z,
                                 y)  # Allows for batches larger than what fits in memory.
     current_z = torch.nn.Parameter(z,
-                                   requires_grad=True)  # makes space to hold gradients - z is the kind of thing we can optimize
+                                   requires_grad=True)
+    # makes space to hold gradients - z is the kind of thing we can optimize
     parameters = [
-        current_z]  # yes we are still shifting z, this time based on the SVM value.
+        current_z]
+    # yes we are still shifting z, this time based on the SVM value.
     num_steps = 500  # sure
     optimizer = torch.optim.Adam([current_z])
     loss_vec = []
@@ -86,7 +91,6 @@ def transform_img(z, class_idx, svm_lbl):
                 else:
                     raise e
 
-    # !git clone https://github.com/schwettmann/homomorpher.git
     path = "SVMs/"+svm_lbl
     model = torch.load(path)
     model.eval()
@@ -102,7 +106,6 @@ def transform_img(z, class_idx, svm_lbl):
             optimizer.step()
 
     G_z2 = utils.elastic_gan(g, current_z, y)  # generate transformed image
-    vutils.visualize_samples(G_z)
-    vutils.visualize_samples(G_z2)
+    # vutils.visualize_samples(G_z)
+    # vutils.visualize_samples(G_z2)
     return G_z, G_z2
-
