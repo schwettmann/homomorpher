@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List
 import os
@@ -23,6 +24,9 @@ class TransformRequest(BaseModel):
 prefix = os.getenv('OPENAPI_PREFIX', '/')
 app = FastAPI(openapi_prefix=prefix)
 
+app.mount("/static", StaticFiles(directory="client/dist"), name="static")
+
+
 # TODO: Be more restrictive !!
 app.add_middleware(
     CORSMiddleware,
@@ -39,11 +43,11 @@ with open('categories_places365.txt', 'r') as cat:
         places_categories.append(line.rstrip().split(' '))
 
 
-@app.get('/')
+@app.get('/all_transitions')
 def read_root():
     return {
         'SVM_closet_emptyfull': 'closet: empty to full',
-        'SVM_lakereflection': 'lake reflection',
+        'SVM_lakereeflection': 'lake reflection',
         'SVM_summerlakes': 'lakes to summer lakes',
     }
 
