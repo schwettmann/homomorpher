@@ -49,6 +49,9 @@ def get_cats():
 
 
 def convert_im_np(image_np):
+    '''
+    Convert NP image to base64
+    '''
     im = transform.ToPILImage()(make_grid(image_np,
                                           nrow=8,
                                           normalize=True,
