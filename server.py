@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 import os
@@ -21,6 +22,16 @@ class TransformRequest(BaseModel):
 
 prefix = os.getenv('OPENAPI_PREFIX', '/')
 app = FastAPI(openapi_prefix=prefix)
+
+# TODO: Be more restrictive !!
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 places_categories = []
 with open('categories_places365.txt', 'r') as cat:
