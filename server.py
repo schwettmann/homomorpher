@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List
 import os
-import homomorpher
+from backend import homomorpher
 import torchvision.transforms as transform
 from torchvision.utils import make_grid
 from helper import pil2base64

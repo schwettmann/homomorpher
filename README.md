@@ -12,6 +12,10 @@ cd pretorched-x
 git checkout dev
 python setup.py install
 ```
+3)  install deps
+4) install fastapi: `pip install fastapi[all] && pip install aiofiles`
+4) run server: `uvicorn server:app --reload`
+
 
 
 

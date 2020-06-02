@@ -1,8 +1,7 @@
-import homomorpher
+from backend import homomorpher
 import torchvision.transforms as transform
 from torchvision.utils import make_grid
-# from PIL import Image
-# import PIL
+
 
 if __name__ == '__main__':
 
