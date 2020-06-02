@@ -61,6 +61,9 @@ def convert_im_np(image_np):
 
 @app.post('/images')
 def post_images(re: ImageRequest):
+    '''
+    Generate image
+    '''
     image_np = homomorpher.generate_img(re.zs, re.category)
     im = convert_im_np(image_np)
 
