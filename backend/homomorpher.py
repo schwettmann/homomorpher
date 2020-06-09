@@ -61,6 +61,30 @@ def generate_img(z, class_idx):
 
     return G_z
 
+def train_model(z, z_lbl) 
+    """
+    for some z and some user labels on those z, trains SVM 
+    :param z: seed vector
+    :param z_lbl: user-labels 
+    :return: trained model 
+    """
+    import torch.nn as nn 
+    X = z
+    y = z_lbl     #should be size(z), binary 
+    num_features = 119   #may need to be changed based on image resolution 
+    n_iterations = 50000
+    model = nn.Linear(num_features, 1).cuda()
+    optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
+    
+    for i in range(n_iterations):
+        optimizer.zero_grad()
+        output = model(X).flatten()
+        loss = torch.mean(torch.clamp(1 - output * (2*y-1), min=0)) #SVM loss
+        loss.backward()
+        optimizer.step()
+            
+    return model 
+    
 
 def transform_img(z, class_idx, svm_lbl):
     """
