@@ -1,1 +1,3 @@
 *.pyc
+client/dist/
+.vscode/
