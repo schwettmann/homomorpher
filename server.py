@@ -23,6 +23,7 @@ class TransformRequest(BaseModel):
 
 prefix = os.getenv('OPENAPI_PREFIX', '/')
 app = FastAPI(openapi_prefix=prefix)
+search_projects = True
 
 app.mount("/static", StaticFiles(directory="client/dist"), name="static")
 
@@ -45,20 +46,42 @@ with open('categories_places365.txt', 'r') as cat:
 
 @app.get('/all_transitions')
 def read_root():
-    return {
-        'SVM_closet_emptyfull': 'closet: empty to full',
-        'SVM_lakereeflection': 'lake reflection',
-        'SVM_summerlakes': 'lakes to summer lakes',
-    }
+    global search_projects
+    projects = [
+        {"id": 'SVM_closet_emptyfull',
+         'descr': 'closet: empty to full', "type": 'original'},
+        {"id": 'SVM_lakereeflection',
+         'descr': 'lake reflection', "type": 'original'},
+        {"id": 'SVM_summerlakes',
+         'descr': 'lakes to summer lakes', "type": 'original'}
+    ]
+    if search_projects:
+        pass  # TODO: !!!
+
+    return projects
 
 
-@app.get('/random_z')
+@ app.get('/random_z')
 def random_z(seed: int = 100):
     rz = homomorpher.generate_random_z()
     return rz.tolist()
 
 
-@app.get('/categories')
+@app.get('/random_images')
+def random_images(count: int, category: int):
+    res = []
+    for i in range(count):
+        rz = homomorpher.generate_random_z()
+        image_np = homomorpher.generate_img(rz, category)
+        im = convert_im_np(image_np)
+        res.append({
+            "z": rz.tolist(),
+            "image": im
+        })
+    return res
+
+
+@ app.get('/categories')
 def get_cats():
     return places_categories
 
@@ -74,7 +97,7 @@ def convert_im_np(image_np):
     return pil2base64(im)
 
 
-@app.post('/images')
+@ app.post('/images')
 def post_images(re: ImageRequest):
     '''
     Generate image
@@ -85,7 +108,7 @@ def post_images(re: ImageRequest):
     return {"request": re, "res": im}
 
 
-@app.post('/transform')
+@ app.post('/transform')
 def post_transform(re: TransformRequest):
     image_in, image_out = homomorpher.transform_img(
         re.zs, re.category, re.transformID)

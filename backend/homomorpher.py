@@ -6,6 +6,11 @@ import torch
 from pretorched.gans import BigGAN, utils
 # from pretorched import visualizers as vutils
 # import torchvision.transforms as transforms
+import backend.path_fixes as pf
+import os
+import uuid
+from datetime import datetime
+import yaml
 
 print(torch.cuda.is_available())
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -61,30 +66,61 @@ def generate_img(z, class_idx):
 
     return G_z
 
-def train_model(z, z_lbl) 
+
+def train_model(z, z_lbl):
     """
     for some z and some user labels on those z, trains SVM 
     :param z: seed vector
     :param z_lbl: user-labels 
     :return: trained model 
     """
-    import torch.nn as nn 
+    import torch.nn as nn
     X = z
-    y = z_lbl     #should be size(z), binary 
-    num_features = 119   #may need to be changed based on image resolution 
+    y = z_lbl  # should be size(z), binary
+    num_features = 119  # may need to be changed based on image resolution
     n_iterations = 50000
     model = nn.Linear(num_features, 1).cuda()
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
-    
+
     for i in range(n_iterations):
         optimizer.zero_grad()
         output = model(X).flatten()
-        loss = torch.mean(torch.clamp(1 - output * (2*y-1), min=0)) #SVM loss
+        loss = torch.mean(torch.clamp(1 - output * (2*y-1), min=0))  # SVM loss
         loss.backward()
         optimizer.step()
-            
-    return model 
-    
+
+    return model
+
+
+def train_and_safe_model(z, z_lbl, descr=None, m_id=None):
+    """
+    train model (see doc)
+    - adds description (descr) as meta-info
+    - if id given - saves under given id (can be used for updating)
+    """
+    model = train_model(z, z_lbl)
+    if m_id is None:
+        m_id = str(uuid.uuid1())
+    if descr is None:
+        descr = m_id
+
+    meta_info = {
+        "id": m_id,
+        "file": "OWN_" + m_id,
+        "descr": descr,
+        "type": "OWN",
+        "utc_created": str(datetime.utcnow())
+    }
+
+    path_yaml = os.path.join(pf.MODEL_DATA_ROOT, "OWN_" + m_id+'.yaml')
+    path_model = os.path.join(pf.MODEL_DATA_ROOT, "OWN_" + m_id)
+
+    with open(path_yaml, 'w') as f_yaml:
+        yaml.dump(meta_info, f_yaml)
+    torch.save(model, path_model)
+
+    return m_id
+
 
 def transform_img(z, class_idx, svm_lbl):
     """
@@ -134,7 +170,7 @@ def transform_img(z, class_idx, svm_lbl):
                 else:
                     raise e
 
-    path = "SVMs/"+svm_lbl
+    path = os.path.join(pf.MODEL_DATA_ROOT, svm_lbl)
     model = torch.load(path)
     model.eval()
 
