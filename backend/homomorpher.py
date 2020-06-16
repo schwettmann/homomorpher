@@ -105,8 +105,8 @@ def train_and_safe_model(X, y, descr=None, m_id=None):
         descr = m_id
 
     meta_info = {
-        "id": m_id,
-        "file": "OWN_" + m_id,
+        "id": "OWN_" + m_id,
+        # "file": "OWN_" + m_id,
         "descr": descr,
         "type": "OWN",
         "utc_created": str(datetime.utcnow())

@@ -69,7 +69,7 @@ def read_root():
             for file in files:
                 if file.endswith(".yaml"):
                     with open(os.path.join(root, file)) as y_f:
-                        projects.append(yaml.load(y_f))
+                        projects.append(yaml.load(y_f, Loader=yaml.FullLoader))
 
     return projects
 
@@ -88,7 +88,7 @@ def random_images(count: int, category: int):
         image_np = homomorpher.generate_img(rz, category)
         im = convert_im_np(image_np)
         res.append({
-            "z": rz.tolist(),
+            "z": rz[0].tolist(),
             "image": im
         })
     return res
