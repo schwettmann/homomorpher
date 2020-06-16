@@ -75,8 +75,8 @@ def train_model(z, z_lbl):
     :return: trained model 
     """
     import torch.nn as nn
-    X = z
-    y = z_lbl  # should be size(z), binary
+    X = z.to(device)
+    y = z_lbl.to(device)  # should be size(z), binary
     num_features = 119  # may need to be changed based on image resolution
     n_iterations = 50000
     model = nn.Linear(num_features, 1).cuda()
@@ -92,13 +92,13 @@ def train_model(z, z_lbl):
     return model
 
 
-def train_and_safe_model(z, z_lbl, descr=None, m_id=None):
+def train_and_safe_model(X, y, descr=None, m_id=None):
     """
     train model (see doc)
     - adds description (descr) as meta-info
     - if id given - saves under given id (can be used for updating)
     """
-    model = train_model(z, z_lbl)
+    model = train_model(X, y)
     if m_id is None:
         m_id = str(uuid.uuid1())
     if descr is None:
@@ -119,7 +119,7 @@ def train_and_safe_model(z, z_lbl, descr=None, m_id=None):
         yaml.dump(meta_info, f_yaml)
     torch.save(model, path_model)
 
-    return m_id
+    return meta_info
 
 
 def transform_img(z, class_idx, svm_lbl):

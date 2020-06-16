@@ -2,12 +2,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import os
 from backend import homomorpher
 import torchvision.transforms as transform
 from torchvision.utils import make_grid
 from helper import pil2base64
+import torch
+import yaml
+import backend.path_fixes as pf
 
 
 class ImageRequest(BaseModel):
@@ -19,6 +22,12 @@ class TransformRequest(BaseModel):
     category: int
     zs: List[List[float]]
     transformID: str
+
+
+class LearnRequest(BaseModel):
+    from_zs: List[List[float]]
+    to_zs: List[List[float]]
+    descr: Optional[str]
 
 
 prefix = os.getenv('OPENAPI_PREFIX', '/')
@@ -56,7 +65,11 @@ def read_root():
          'descr': 'lakes to summer lakes', "type": 'original'}
     ]
     if search_projects:
-        pass  # TODO: !!!
+        for root, dirs, files in os.walk(pf.MODEL_DATA_ROOT):
+            for file in files:
+                if file.endswith(".yaml"):
+                    with open(os.path.join(root, file)) as y_f:
+                        projects.append(yaml.load(y_f))
 
     return projects
 
@@ -106,6 +119,21 @@ def post_images(re: ImageRequest):
     im = convert_im_np(image_np)
 
     return {"request": re, "res": im}
+
+
+@ app.post('/learn')
+def post_transform(re: LearnRequest):
+    X_from = torch.Tensor(re.from_zs)
+    X_to = torch.Tensor(re.to_zs)
+    X = torch.cat((X_from, X_to), dim=0)
+
+    y_from = torch.zeros(X_from.shape[0])
+    y_to = torch.ones(X_to.shape[0])
+    y = torch.cat((y_from, y_to))
+
+    meta_info = homomorpher.train_and_safe_model(X, y, descr=re.descr)
+
+    return {"request": {}, "result": meta_info}
 
 
 @ app.post('/transform')
