@@ -84,6 +84,33 @@ def train_model(z, z_lbl)
         optimizer.step()
             
     return model 
+
+def train_model_layer(z, z_lbl, l) 
+    """
+    for some z and some user labels on those z, trains SVM on activations in layer l
+    :param z: seed vector
+    :param z_lbl: user-labels 
+    :param l: layer to train on 
+    :return: trained model 
+    """
+    activations = G.forward(z, y,embed=True, layer=l+1) #grab activations. l+1 because of BigGAN's layer numbering. 
+    activations_reshaped = activations.view(activations.size(0),-1)
+    import torch.nn as nn 
+    X = activations_reshaped.detach()
+    y = z_lbl     #should be size(z), binary 
+    num_features = 262144   #for L1. based on activations.size()
+    n_iterations = 100000 #toggle this
+    model = nn.Linear(num_features, 1).cuda()
+    optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
+    
+    for i in range(n_iterations):
+        optimizer.zero_grad()
+        output = model(X).flatten()
+        loss = torch.mean(torch.clamp(1 - output * (2*y-1), min=0)) #SVM loss
+        loss.backward()
+        optimizer.step()
+            
+    return model 
     
 
 def transform_img(z, class_idx, svm_lbl):
