@@ -113,12 +113,14 @@ def train_model_layer(z, z_lbl, l)
     return model 
     
 
-def transform_img(z, class_idx, svm_lbl):
+def transform_img(z, class_idx, svm_lbl, num_steps, direction):
     """
     from z + orig category, name of SVM to use; return original image
     and transformed image
     :param z: random vector
-    :param class_idx:
+    :param class_idx: category in places 365
+    :param num_steps: (how much to transform) 
+    :param direction: toward or away from target class (1 or -1)
     :param svm_lbl:  'SVM_summerlakes' or 'SVM_lakereeflection'
     :return: original image and transformed image
     """
@@ -136,7 +138,7 @@ def transform_img(z, class_idx, svm_lbl):
     # makes space to hold gradients - z is the kind of thing we can optimize
     # parameters = [current_z]
     # yes we are still shifting z, this time based on the SVM value.
-    num_steps = 500  # sure
+    #num_steps = 500  # sure
     optimizer = torch.optim.Adam([current_z])
     loss_vec = []
 
@@ -169,10 +171,9 @@ def transform_img(z, class_idx, svm_lbl):
         for step_num in (range(num_steps + 1)):
             optimizer.zero_grad()
             # outputs = model(current_z)
-            loss = -model(current_z)
+            loss = direction*model(current_z)
             # flip this sign to change direction across
             # the decision boundary
-
             loss_vec.append(loss)
             loss.backward()
             optimizer.step()
