@@ -182,3 +182,62 @@ def transform_img(z, class_idx, svm_lbl, num_steps, direction):
     # vutils.visualize_samples(G_z)
     # vutils.visualize_samples(G_z2)
     return G_z, G_z2
+
+def transform_img_layer1(z, class_idx, svm_lbl, num_steps, direction):
+    """
+    from z + orig category, name of SVM to use; return original image
+    and transformed image
+    :param z: random vector
+    :param class_idx: category in places 365
+    :param num_steps: (how much to transform) 
+    :param direction: toward or away from target class (1 or -1)
+    :param svm_lbl:  'SVM_summerlakes' or 'SVM_lakereeflection'
+    :return: original image and transformed image
+    """
+
+    if isinstance(z, list):
+        z = torch.tensor(z).to(device)
+
+    get_gs()
+    y = class_idx * torch.ones(batch_size, device=device).long()
+    G = BigGAN(resolution=res, pretrained=pretrained, load_ema=True).to(device)
+    g = functools.partial(G, embed=True)
+    
+    with torch.no_grad():
+        G_z = utils.elastic_gan(g, z, y)
+        # Allows for batches larger than what fits in memory. #run generator on current z 
+        
+    old_activations = G.forward(z, y,embed=True, layer=2)  #indexed as 2 because of BigGAN labeling (actually L1) 
+    old_activations_reshaped = old_activations.view(old_activations.size(0),-1) 
+    G_editable = nethook.InstrumentedModel(G).cuda()
+    current_activations  = torch.nn.Parameter(old_activations_reshaped, requires_grad=True) 
+    
+    optimizer = torch.optim.Adam([current_activations])
+    loss_fn = torch.nn.CrossEntropyLoss(weight=None, size_average=None, ignore_index=-100, reduce=None, reduction='mean')
+    loss_vec = []
+    
+    def optim_G(x, *args):  #edit layer function 
+        x[:] = new_activations
+        print('The image was edited!')
+        return x
+    
+    path = "SVMs/"+svm_lbl   #make sure this was an SVM trained on L1
+    model = torch.load(path)
+    model.eval()
+    
+    with torch.enable_grad():
+        for step_num in (range(num_steps + 1)):
+            optimizer.zero_grad()
+            outputs = model(current_activations)
+            loss    = direction*model(current_activations)
+            loss_vec.append(loss)
+            loss.backward()
+            optimizer.step()
+
+    new_activations = current_activations.view(1, 1024, 16, 16) 
+    #now edit the generator using the new activations
+    G_editable.edit_layer('blocks.1.0',rule = optim_G)
+    
+    G_z2 = utils.elastic_gan(g, z, y)  # Allows for batches larger than what fits in memory.  
+    return G_z, G_z2 #original and modified image(s)
+    
