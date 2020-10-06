@@ -17,5 +17,11 @@ python setup.py install
 4) run server: `uvicorn server:app --reload`
 
 
+## server:
+```
+ OPENAPI_PREFIX=/frankenstein uvicorn server:app --port 5005 --reload
+ ```
+
+
 
 
