@@ -14,7 +14,7 @@ export function main() {
     // const mainDiv = document.getElementById('main')
     // const wl = new HTMLList(mainDiv, eventHandler)
 
-    const api = new API('http://ganpaint.io/frankenstein/');
+    const api = new API('http://169.63.46.227/frankenstein/');
 
     let all_images_apply = [];
     let all_images_train: { z: number[]; image: string }[] = [];
