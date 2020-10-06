@@ -11,6 +11,7 @@ import os
 import uuid
 from datetime import datetime
 import yaml
+import torch.nn as nn
 
 print(torch.cuda.is_available())
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -69,12 +70,11 @@ def generate_img(z, class_idx):
 
 def train_model(z, z_lbl):
     """
-    for some z and some user labels on those z, trains SVM 
+    for some z and some user labels on those z, trains SVM
     :param z: seed vector
-    :param z_lbl: user-labels 
-    :return: trained model 
+    :param z_lbl: user-labels
+    :return: trained model
     """
-    import torch.nn as nn
     X = z.to(device)
     y = z_lbl.to(device)  # should be size(z), binary
     num_features = 119  # may need to be changed based on image resolution
@@ -122,12 +122,45 @@ def train_and_safe_model(X, y, descr=None, m_id=None):
     return meta_info
 
 
-def transform_img(z, class_idx, svm_lbl):
+def train_model_layer(z, z_lbl, l):
+    """
+    for some z and some user labels on those z, trains SVM on activations in layer l
+    :param z: seed vector
+    :param z_lbl: user-labels
+    :param l: layer to train on
+    :return: trained model
+    """
+    get_gs()
+    y = z_lbl     #should be size(z), binary
+
+    activations = G.forward(z, y,embed=True, layer=l+1) #grab activations. l+1 because of BigGAN's layer numbering.
+    activations_reshaped = activations.view(activations.size(0),-1)
+    X = activations_reshaped.detach()
+
+    num_features = 262144   #for L1. based on activations.size()
+    n_iterations = 100000 #toggle this
+
+    model = nn.Linear(num_features, 1).cuda()
+    optimizer = torch.optim.SGD(model.parameters(), lr=1e-2)
+
+    for i in range(n_iterations):
+        optimizer.zero_grad()
+        output = model(X).flatten()
+        loss = torch.mean(torch.clamp(1 - output * (2*y-1), min=0)) #SVM loss
+        loss.backward()
+        optimizer.step()
+
+    return model
+
+
+def transform_img(z, class_idx, svm_lbl, num_steps=500, direction=-1):
     """
     from z + orig category, name of SVM to use; return original image
     and transformed image
     :param z: random vector
-    :param class_idx:
+    :param class_idx: category in places 365
+    :param num_steps: (how much to transform)
+    :param direction: toward or away from target class (1 or -1)
     :param svm_lbl:  'SVM_summerlakes' or 'SVM_lakereeflection'
     :return: original image and transformed image
     """
@@ -145,7 +178,7 @@ def transform_img(z, class_idx, svm_lbl):
     # makes space to hold gradients - z is the kind of thing we can optimize
     # parameters = [current_z]
     # yes we are still shifting z, this time based on the SVM value.
-    num_steps = 500  # sure
+    # num_steps = 500  # sure
     optimizer = torch.optim.Adam([current_z])
     loss_vec = []
 
@@ -178,10 +211,9 @@ def transform_img(z, class_idx, svm_lbl):
         for step_num in (range(num_steps + 1)):
             optimizer.zero_grad()
             # outputs = model(current_z)
-            loss = -model(current_z)
+            loss = direction*model(current_z)
             # flip this sign to change direction across
             # the decision boundary
-
             loss_vec.append(loss)
             loss.backward()
             optimizer.step()
@@ -190,3 +222,64 @@ def transform_img(z, class_idx, svm_lbl):
     # vutils.visualize_samples(G_z)
     # vutils.visualize_samples(G_z2)
     return G_z, G_z2
+
+def transform_img_layer1(z, class_idx, svm_lbl, num_steps, direction):
+    """
+    from z + orig category, name of SVM to use; return original image
+    and transformed image
+    :param z: random vector
+    :param class_idx: category in places 365
+    :param num_steps: (how much to transform)
+    :param direction: toward or away from target class (1 or -1)
+    :param svm_lbl:  'SVM_summerlakes' or 'SVM_lakereeflection'
+    :return: original image and transformed image
+    """
+
+    return None
+
+    # if isinstance(z, list):
+    #     z = torch.tensor(z).to(device)
+    #
+    # get_gs()
+    # y = class_idx * torch.ones(batch_size, device=device).long()
+    # G = BigGAN(resolution=res, pretrained=pretrained, load_ema=True).to(device)
+    # g = functools.partial(G, embed=True)
+    #
+    # with torch.no_grad():
+    #     G_z = utils.elastic_gan(g, z, y)
+    #     # Allows for batches larger than what fits in memory. #run generator on current z
+    #
+    # old_activations = G.forward(z, y,embed=True, layer=2)  #indexed as 2 because of BigGAN labeling (actually L1)
+    # old_activations_reshaped = old_activations.view(old_activations.size(0),-1)
+    # G_editable = nethook.InstrumentedModel(G).cuda()
+    # current_activations  = torch.nn.Parameter(old_activations_reshaped, requires_grad=True)
+    #
+    # optimizer = torch.optim.Adam([current_activations])
+    # loss_fn = torch.nn.CrossEntropyLoss(weight=None, size_average=None, ignore_index=-100, reduce=None, reduction='mean')
+    # loss_vec = []
+    #
+    # def optim_G(x, *args):  #edit layer function
+    #     x[:] = new_activations
+    #     print('The image was edited!')
+    #     return x
+    #
+    # path = "SVMs/"+svm_lbl   #make sure this was an SVM trained on L1
+    # model = torch.load(path)
+    # model.eval()
+    #
+    # with torch.enable_grad():
+    #     for step_num in (range(num_steps + 1)):
+    #         optimizer.zero_grad()
+    #         outputs = model(current_activations)
+    #         loss    = direction*model(current_activations)
+    #         loss_vec.append(loss)
+    #         loss.backward()
+    #         optimizer.step()
+    #
+    # new_activations = current_activations.view(1, 1024, 16, 16)
+    # #now edit the generator using the new activations
+    # G_editable.edit_layer('blocks.1.0',rule = optim_G)
+    #
+    # G_z2 = utils.elastic_gan(g, z, y)  # Allows for batches larger than what fits in memory.
+    # return G_z, G_z2 #original and modified image(s)
+
