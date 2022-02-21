@@ -32,11 +32,22 @@
 <body>
 <nav class="navbar navbar-dark bg-dark fixed-top">
     <a class="navbar-brand">Homomorpher</a>
+    <div class="btn-group" role="group" aria-label="Basic example">
+        <button type="button" id='mode_train_btn' class="btn btn-dark">Train
+        </button>
+        <button type="button" id='mode_apply_btn' class="btn btn-light">Apply
+        </button>
+        <!--        <button type="button" class="btn btn-secondary">Right</button>-->
+    </div>
 </nav>
 
 <div class="container-md" style="margin-top: 60px;">
 
-    <div class="row">
+    <!-- *********
+        APPLY MODE
+        ***********
+    -->
+    <div class="row mode_apply">
         <div class="input-group ">
             <label for='sel_transition'
                    class="col-form-label">Transition:</label>
@@ -63,14 +74,65 @@
             </div>
         </div>
     </div>
-    <!--    <select id='sel_' class="selectpicker">-->
-    <!--        -->
-    <!--    </select>-->
+    <div id='main' class="row mode_apply"></div>
 
-    <div id='main' class="row">
-
-<!--    <div id="main" class="col-12"></div>-->
+      <!-- *********
+        TRAIN MODE
+        ***********
+    -->
+    <div class="row collapse show mode_train hide" id="helpContent">
+        Training steps:
+        <ol>
+            <li>select a category and number of samples and hit "Generate Random Sampples",</li>
+            <li>select images for "from" group (click, red) and "to" group (ALT+click, blue),</li>
+            <li>enter a UNIQUE name for your transition and hit "Train"</li>
+            <li>go to "APPLY" to use your transition</li>
+            </ol>
     </div>
+     <div class="row mode_train hide">
+        <div class="input-group ">
+<!--            <label for='sel_transition'-->
+<!--                   class="col-form-label">Transition:</label>-->
+<!--            <select id='sel_transition' class="custom-select"-->
+<!--                    style="margin-right: 10px;">-->
+
+<!--            </select>-->
+
+            <label for='sel_category' class="col-form-label">Category:</label>
+            <select id='train_sel_category' class="custom-select"
+                    style="margin-right: 10px;">
+
+            </select>
+
+            <div class="col-form-label"> Samples:</div>
+            <input id='train_sel_samples' class="form-control form-control-text"
+                   type="number"
+                   value="30" style="margin-right: 10px; display: inline-block;">
+            <div class="input-group-append input-group-sm" style="margin-right: 10px;">
+                <button id='train_gen_btn' class="btn btn-outline-secondary "
+                        type="button">
+                    Generate Random Samples
+                </button>
+            </div>
+            <div class="col-form-label"> Name:</div>
+            <input id='train_name' class="form-control form-control-text"
+                   type="text"
+                   value="" style="margin-right: 10px; display: inline-block;">
+            <button id='train_btn' class="btn btn-outline-secondary "
+                        type="button" disabled>
+                    Train
+                </button>
+<!--             <button class="btn btn-outline-secondary "-->
+<!--                     data-toggle="collapse" data-target="#helpContent"-->
+<!--                        type="button" >-->
+<!--                    ?-->
+<!--                </button>-->
+
+        </div>
+    </div>
+    <div id='train_main' class="row mode_train hide"></div>
+
+
 
 </div>
 <div style="margin-bottom: 30px;"></div>

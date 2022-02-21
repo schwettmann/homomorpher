@@ -8,14 +8,22 @@ const baseurl = URLHandler.basicURL()
 export interface TransformRequest {
     category: number,
     zs: number[][],
-    transformID:string
+    transformID: string
 }
 
 export type Base64Image = string;
 
+export interface TransitionMeta {
+    id: string,
+    descr: string,
+    type: 'original' | 'OWN',
+    file?: string,
+    utc_created?: string
+}
+
 export interface TransformResponse {
     request: TransformRequest,
-    res:{
+    res: {
         in: Base64Image,
         out: Base64Image
     }
@@ -30,7 +38,7 @@ export class API {
         }
     }
 
-    all_transitions(): Promise<{ [key: string]: string }> {
+    all_transitions(): Promise<TransitionMeta[]> {
         const url = makeUrl(this.baseURL + "/all_transitions", {})
         return d3.json(url)
     }
@@ -45,6 +53,25 @@ export class API {
         return d3.json(url)
     }
 
+
+    random_images(count: number, category: number): Promise<{ z: number[], image: string }[]> {
+        const url = makeUrl(this.baseURL + "/random_images", {count, category})
+        return d3.json(url)
+    }
+
+    learn(from_zs: number[][], to_zs: number[][], descr = null): Promise<{ request: {}, result: TransitionMeta }> {
+        const toSend = {
+            from_zs, to_zs
+        }
+        if (descr) toSend["descr"] = descr;
+
+        const url = makeUrl(this.baseURL + '/learn');
+        const payload = toPayload(toSend)
+
+        return d3.json(url, payload)
+    }
+
+
     /**
      * all mappings of categories to categoryIDs
      */
@@ -54,7 +81,7 @@ export class API {
     }
 
     transformImg(category: number, z: number[], transformID: string): Promise<TransformResponse> {
-        const toSend:TransformRequest = {
+        const toSend: TransformRequest = {
             category, zs: [z], transformID
         }
 

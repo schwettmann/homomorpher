@@ -2,5 +2,6 @@
     "python.pythonPath": "/home/hen/miniconda3/envs/homomorpher/bin/python",
     "python.linting.pylintEnabled": false,
     "python.linting.enabled": true,
-    "python.linting.flake8Enabled": true
+    "python.linting.flake8Enabled": true,
+    "git.ignoreLimitWarning": true
 }

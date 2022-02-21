@@ -1,3 +1,5 @@
 *.pyc
 client/dist/
 .vscode/
+data_models/OWN_*
+client/node_modules/

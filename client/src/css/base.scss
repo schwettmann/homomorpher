@@ -170,4 +170,19 @@ svg {
   border: #6c7067 1px solid;
   background-color: #000;
   padding: 10px;
+
+  &.select_to{
+    background-color: #3498db;
+  }
+
+  &.select_from{
+    background-color: #ff8566;
+  }
+
 }
+
+.hide{
+  display: none;
+}
+
+

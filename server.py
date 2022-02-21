@@ -2,12 +2,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import os
 from backend import homomorpher
 import torchvision.transforms as transform
 from torchvision.utils import make_grid
 from helper import pil2base64
+import torch
+import yaml
+import backend.path_fixes as pf
+import pickle
 
 
 class ImageRequest(BaseModel):
@@ -19,10 +23,24 @@ class TransformRequest(BaseModel):
     category: int
     zs: List[List[float]]
     transformID: str
+    onlyTransform: bool = False
+    direction: int = -1
+    steps: int = 500
+    layer: int = 0
+
+
+class LearnRequest(BaseModel):
+    from_zs: List[List[float]]
+    to_zs: List[List[float]]
+    descr: Optional[str]
+    from_imgs: Optional[List[str]]
+    to_imgs: Optional[List[str]]
+    layer: int = 0
 
 
 prefix = os.getenv('OPENAPI_PREFIX', '/')
 app = FastAPI(openapi_prefix=prefix)
+search_projects = True
 
 app.mount("/static", StaticFiles(directory="client/dist"), name="static")
 
@@ -45,20 +63,47 @@ with open('categories_places365.txt', 'r') as cat:
 
 @app.get('/all_transitions')
 def read_root():
-    return {
-        'SVM_closet_emptyfull': 'closet: empty to full',
-        'SVM_lakereeflection': 'lake reflection',
-        'SVM_summerlakes': 'lakes to summer lakes',
-    }
+    global search_projects
+    projects = [
+        {"id": 'SVM_closet_emptyfull',
+         'descr': 'closet: empty to full', "type": 'original'},
+        {"id": 'SVM_lakereeflection',
+         'descr': 'lake reflection', "type": 'original'},
+        {"id": 'SVM_summerlakes',
+         'descr': 'lakes to summer lakes', "type": 'original'}
+    ]
+    if search_projects:
+        for root, dirs, files in os.walk(pf.MODEL_DATA_ROOT):
+            for file in files:
+                if file.endswith(".yaml"):
+                    with open(os.path.join(root, file)) as y_f:
+                        projects.append(yaml.load(y_f, Loader=yaml.FullLoader))
+
+    return projects
 
 
-@app.get('/random_z')
+@ app.get('/random_z')
 def random_z(seed: int = 100):
     rz = homomorpher.generate_random_z()
     return rz.tolist()
 
 
-@app.get('/categories')
+@app.get('/random_images')
+def random_images(count: int, category: int):
+    res = []
+    for i in range(count):
+        rz = homomorpher.generate_random_z()
+        image_np = homomorpher.generate_img(rz, category)
+        im = convert_im_np(image_np)
+        res.append({
+            "z": rz[0].tolist(),
+            "image": im,
+            "category": category
+        })
+    return res
+
+
+@ app.get('/categories')
 def get_cats():
     return places_categories
 
@@ -74,7 +119,7 @@ def convert_im_np(image_np):
     return pil2base64(im)
 
 
-@app.post('/images')
+@ app.post('/images')
 def post_images(re: ImageRequest):
     '''
     Generate image
@@ -85,11 +130,70 @@ def post_images(re: ImageRequest):
     return {"request": re, "res": im}
 
 
-@app.post('/transform')
+@ app.post('/learn')
+def post_learn(re: LearnRequest):
+    X_from = torch.Tensor(re.from_zs)
+    X_to = torch.Tensor(re.to_zs)
+    X = torch.cat((X_from, X_to), dim=0)
+
+    y_from = torch.zeros(X_from.shape[0])
+    y_to = torch.ones(X_to.shape[0])
+    y = torch.cat((y_from, y_to))
+
+    meta_info = homomorpher.train_and_safe_model(X, y, descr=re.descr, l=re.layer)
+
+    if re.from_imgs and re.to_imgs:
+        path_images = os.path.join(
+            pf.MODEL_DATA_ROOT, meta_info["id"]+'.images')
+        pickle.dump({
+            "from_imgs": re.from_imgs,
+            "from_zs": re.from_zs,
+            "to_imgs": re.to_imgs,
+            "to_zs": re.to_zs
+        }, open(path_images, 'wb'))
+
+    return {"request": {}, "result": meta_info}
+
+
+@ app.post('/transform')
 def post_transform(re: TransformRequest):
-    image_in, image_out = homomorpher.transform_img(
-        re.zs, re.category, re.transformID)
-    im_in = convert_im_np(image_in)
+    path_yaml = os.path.join(pf.MODEL_DATA_ROOT, re.transformID+'.yaml')
+    if not os.path.isfile(path_yaml):
+        return {"error": "wrong transition ID"}
+    config = yaml.load(open(path_yaml,"rb"), Loader= yaml.FullLoader)
+    if "layer" not in config or config["layer"] == 0:
+        image_in, image_out = homomorpher.transform_img(
+            re.zs,
+            re.category,
+            re.transformID,
+            num_steps=re.steps,
+            direction=re.direction,
+            onlyTransform=re.onlyTransform
+        )
+    else:
+        # TODO: Only L1 yet
+        image_in, image_out = homomorpher.transform_img_layer1(
+            re.zs,
+            re.category,
+            re.transformID,
+            num_steps=re.steps,
+            direction=re.direction,
+            onlyTransform=re.onlyTransform
+        )
+
+    if (re.onlyTransform):
+        im_in = ''
+    else:
+        im_in = convert_im_np(image_in)
     im_out = convert_im_np(image_out)
 
     return {"request": re, "res": {"in": im_in, "out": im_out}}
+
+
+@app.get('/transform_info')
+def transform_info(transformID: str):
+    path_images = os.path.join(
+        pf.MODEL_DATA_ROOT, transformID+'.images')
+    res = pickle.load(open(path_images, "rb"))
+
+    return {"transformID": transformID, "res": res}
