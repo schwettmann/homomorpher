@@ -6,7 +6,7 @@
 _Latent Compass: Creation by Navigation_ <br>
 [Sarah Schwettmann](https://cogconfluence.com) *, [Hendrik Strobelt](http://hendrik.strobelt.com/) *, [Mauro Martino](https://www.mamartino.com/) <br>
 MIT CSAIL, MIT BCS, MIT-IBM Watson AI Lab, IBM Research <br>
-In NeurIPS Workshop for Creativity and Design, 2020
+In [NeurIPS Workshop for Creativity and Design, 2020](https://neurips2020creativity.github.io/)
 
 
 ![overview](https://github.com/HendrikStrobelt/homomorpher/blob/master/z_L1_schematic_updated.png?raw=true)
