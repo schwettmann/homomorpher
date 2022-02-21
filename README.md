@@ -36,20 +36,23 @@ python setup.py install
 4) install fastapi: `pip install fastapi[all] && pip install aiofiles`
 4) run server: `uvicorn server:app --reload`
 
+## Server setup:
+```
+ OPENAPI_PREFIX=/frankenstein uvicorn server:app --port 5005 --reload
+ ```
+
 ## Usage: 
 
 Our method works by training a linear model on noise vectors in the latent space of BigGAN, or activations of intermediate layers, that are associated with images. The images are sorted into two classes by a user. The beauty of this method is that you only need a few examples! We can then learn a direction that transforms any new image from one class into the other, by steering through latent space or activation space using that learned direction. Code for implementing this method is in the `homomorpher` module in `backend`.
 
 You can try generating images from BigGAN and capturing perceptual dimensions you find salient by sorting the images (minimum 10!) into two classes (with labels `1` and `0`). To train a model and learn a direction corresponding to the distinction between the two classes, first decide whether you are going to work in Z-space or in the space of intermediate layer activations (layers closer to the image output control increasingly fine-grained image features). `homomorpher.train_model(z, z_lbl)` learns a model in Z-space and `homomorpher.train_model_layer(z, z_lbl, l)` learns a model in featurespace in layer `l`. The `homomorpher` module also contains code for using learned models to transform images.
 
-The [Latent Compass](https://latentcompass.com) makes navigating the model's concept space easy with an interface for sorting generated images, learning directions, and using those directions to steer through visual space. Example "fullness" direction found using the Latent Compass, applied to images across classes: 
+The [Latent Compass](https://latentcompass.com) makes navigating the model's concept space easy with an interface for sorting generated images, learning directions, and using those directions to steer through visual space. 
+
+Example "fullness" direction found using the Latent Compass, applied to images across classes: 
 
 ![overview](https://github.com/HendrikStrobelt/homomorpher/blob/master/example_latentcompass.png?raw=true)
 
-## Server setup:
-```
- OPENAPI_PREFIX=/frankenstein uvicorn server:app --port 5005 --reload
- ```
 
 ## Citation
 
