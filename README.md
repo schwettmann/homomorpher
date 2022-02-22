@@ -17,7 +17,7 @@ In [NeurIPS Workshop for Creativity and Design, 2020](https://neurips2020creativ
 
 1) To run the code yourself, start by cloning the repository:
 ```bash
-git clone https://github.com/HendrikStrobelt/homomorpher
+git clone https://github.com/schwettmann/homomorpher
 ```
 You will probably want to create a conda environment or virtual environment instead of installing the dependencies globally. E.g., to create a new virtual environment you can run:
 ```bash
