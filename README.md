@@ -11,7 +11,7 @@ MIT CSAIL, MIT BCS, MIT-IBM Watson AI Lab, IBM Research <br>
 In [NeurIPS Workshop for Creativity and Design, 2020](https://neurips2020creativity.github.io/)
 
 
-![overview](https://github.com/HendrikStrobelt/homomorpher/blob/master/z_L1_schematic_updated.png?raw=true)
+![overview](https://github.com/schwettmann/homomorpher/blob/master/z_L1_schematic_updated.png?raw=true)
 
 ## Install
 
@@ -51,7 +51,7 @@ The [Latent Compass](https://latentcompass.com) makes navigating the model's con
 
 Example "fullness" direction found using the Latent Compass, applied to images across classes: 
 
-![overview](https://github.com/HendrikStrobelt/homomorpher/blob/master/example_latentcompass.png?raw=true)
+![overview](https://github.com/schwettmann/homomorpher/blob/master/example_latentcompass.png?raw=true)
 
 
 ## Citation
